@@ -3,13 +3,33 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Automated Indigene Certificate Issuance System API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: accounts
+    description: Demo account / session selection
+  - name: tenants
+    description: State tenant management
+  - name: geography
+    description: LGA and ward management
+  - name: officers
+    description: Issuing officer accounts
+  - name: applications
+    description: Indigene certificate applications
+  - name: certificates
+    description: Issued certificates
+  - name: verification
+    description: Public certificate verification
+  - name: dashboards
+    description: Dashboards and reporting
+  - name: audit
+    description: Audit log
+  - name: notifications
+    description: Applicant notifications
 paths:
   /healthz:
     get:
@@ -24,6 +44,600 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /accounts:
+    get:
+      operationId: listAccounts
+      tags: [accounts]
+      summary: List demo accounts
+      description: Returns the seeded demo accounts that can be used to sign in across roles.
+      responses:
+        "200":
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+
+  /tenants:
+    get:
+      operationId: listTenants
+      tags: [tenants]
+      summary: List state tenants
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tenant"
+    post:
+      operationId: createTenant
+      tags: [tenants]
+      summary: Create a state tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+
+  /tenants/{tenantId}:
+    get:
+      operationId: getTenant
+      tags: [tenants]
+      summary: Get a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateTenant
+      tags: [tenants]
+      summary: Update tenant profile, branding, fee or status
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+
+  /tenants/{tenantId}/lgas:
+    get:
+      operationId: listLgas
+      tags: [geography]
+      summary: List LGAs for a tenant with their wards
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of LGAs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lga"
+    post:
+      operationId: createLga
+      tags: [geography]
+      summary: Create an LGA for a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LgaInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lga"
+
+  /lgas/{lgaId}/wards:
+    post:
+      operationId: createWard
+      tags: [geography]
+      summary: Create a ward under an LGA
+      parameters:
+        - name: lgaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WardInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ward"
+
+  /tenants/{tenantId}/officers:
+    get:
+      operationId: listOfficers
+      tags: [officers]
+      summary: List issuing officers and admins for a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of officers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Officer"
+    post:
+      operationId: createOfficer
+      tags: [officers]
+      summary: Create an officer account for a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfficerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Officer"
+
+  /applications:
+    get:
+      operationId: listApplications
+      tags: [applications]
+      summary: List applications with optional filters
+      parameters:
+        - name: applicantId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: tenantId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: lgaId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: officerId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+    post:
+      operationId: createApplication
+      tags: [applications]
+      summary: Create a new draft application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{applicationId}:
+    get:
+      operationId: getApplication
+      tags: [applications]
+      summary: Get a full application with documents, payment, and certificate
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Update application fields or submit it
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{applicationId}/documents:
+    post:
+      operationId: addDocument
+      tags: [applications]
+      summary: Attach a supporting document to an application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+
+  /applications/{applicationId}/pay:
+    post:
+      operationId: payApplication
+      tags: [applications]
+      summary: Record a successful payment for an application
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "200":
+          description: Application with payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{applicationId}/approve:
+    post:
+      operationId: approveApplication
+      tags: [applications]
+      summary: Approve a paid application and generate a certificate
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalInput"
+      responses:
+        "200":
+          description: Approved application with generated certificate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /applications/{applicationId}/reject:
+    post:
+      operationId: rejectApplication
+      tags: [applications]
+      summary: Reject a paid application with a reason
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectionInput"
+      responses:
+        "200":
+          description: Rejected application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /certificates/{certificateId}:
+    get:
+      operationId: getCertificate
+      tags: [certificates]
+      summary: Get a certificate by id
+      parameters:
+        - name: certificateId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Certificate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Certificate"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /certificates/{certificateId}/revoke:
+    post:
+      operationId: revokeCertificate
+      tags: [certificates]
+      summary: Revoke an issued certificate
+      parameters:
+        - name: certificateId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeInput"
+      responses:
+        "200":
+          description: Revoked certificate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Certificate"
+
+  /verify/{certificateNumber}:
+    get:
+      operationId: verifyCertificate
+      tags: [verification]
+      summary: Public verification of a certificate by certificate number
+      parameters:
+        - name: certificateNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verification result (privacy-safe)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationResult"
+
+  /tenants/{tenantId}/dashboard:
+    get:
+      operationId: getTenantDashboard
+      tags: [dashboards]
+      summary: Operational dashboard for a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tenant dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantDashboard"
+
+  /platform/overview:
+    get:
+      operationId: getPlatformOverview
+      tags: [dashboards]
+      summary: Platform-wide overview for super admins
+      responses:
+        "200":
+          description: Platform overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformOverview"
+
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [audit]
+      summary: List audit log events
+      parameters:
+        - name: tenantId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for a user
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{notificationId}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +648,465 @@ components:
       required:
         - status
 
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Account:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        role:
+          type: string
+          description: One of super_admin, tenant_admin, officer, applicant
+        tenantId: { type: ["integer", "null"] }
+        tenantName: { type: ["string", "null"] }
+
+    Tenant:
+      type: object
+      required:
+        - id
+        - name
+        - code
+        - slug
+        - certificatePrefix
+        - fee
+        - currency
+        - status
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        code: { type: string }
+        slug: { type: string }
+        certificatePrefix: { type: string }
+        fee: { type: number }
+        currency: { type: string }
+        status:
+          type: string
+          description: active or suspended
+        contactEmail: { type: ["string", "null"] }
+        contactPhone: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        capital: { type: ["string", "null"] }
+        logoUrl: { type: ["string", "null"] }
+        primaryColor: { type: ["string", "null"] }
+        tagline: { type: ["string", "null"] }
+        createdAt: { type: ["string", "null"] }
+
+    TenantInput:
+      type: object
+      required: [name, code, certificatePrefix, fee]
+      properties:
+        name: { type: string, minLength: 1 }
+        code: { type: string, minLength: 1 }
+        certificatePrefix: { type: string, minLength: 1 }
+        fee: { type: number }
+        currency: { type: string }
+        contactEmail: { type: string }
+        contactPhone: { type: string }
+        address: { type: string }
+        capital: { type: string }
+        primaryColor: { type: string }
+        tagline: { type: string }
+
+    TenantUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        certificatePrefix: { type: string }
+        fee: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        contactEmail: { type: string }
+        contactPhone: { type: string }
+        address: { type: string }
+        capital: { type: string }
+        primaryColor: { type: string }
+        tagline: { type: string }
+
+    Lga:
+      type: object
+      required: [id, tenantId, name]
+      properties:
+        id: { type: integer }
+        tenantId: { type: integer }
+        name: { type: string }
+        code: { type: ["string", "null"] }
+        wards:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ward"
+
+    LgaInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        code: { type: string }
+
+    Ward:
+      type: object
+      required: [id, lgaId, name]
+      properties:
+        id: { type: integer }
+        lgaId: { type: integer }
+        name: { type: string }
+
+    WardInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+
+    Officer:
+      type: object
+      required: [id, tenantId, name, email, role, status]
+      properties:
+        id: { type: integer }
+        tenantId: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string }
+        status: { type: string }
+        reviewedCount: { type: ["integer", "null"] }
+        createdAt: { type: ["string", "null"] }
+
+    OfficerInput:
+      type: object
+      required: [name, email, role]
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string, minLength: 1 }
+        role: { type: string }
+
+    Document:
+      type: object
+      required: [id, applicationId, name, type, fileName]
+      properties:
+        id: { type: integer }
+        applicationId: { type: integer }
+        name: { type: string }
+        type: { type: string }
+        fileName: { type: string }
+        sizeKb: { type: ["integer", "null"] }
+        uploadedAt: { type: ["string", "null"] }
+
+    DocumentInput:
+      type: object
+      required: [name, type, fileName]
+      properties:
+        name: { type: string, minLength: 1 }
+        type: { type: string }
+        fileName: { type: string }
+        sizeKb: { type: integer }
+
+    Payment:
+      type: object
+      required: [id, applicationId, tenantId, amount, currency, reference, status]
+      properties:
+        id: { type: integer }
+        applicationId: { type: integer }
+        tenantId: { type: integer }
+        amount: { type: number }
+        currency: { type: string }
+        reference: { type: string }
+        gateway: { type: ["string", "null"] }
+        status: { type: string }
+        payerName: { type: ["string", "null"] }
+        receiptNumber: { type: ["string", "null"] }
+        paidAt: { type: ["string", "null"] }
+
+    PaymentInput:
+      type: object
+      required: [payerName]
+      properties:
+        payerName: { type: string, minLength: 1 }
+        method: { type: string }
+
+    Certificate:
+      type: object
+      required:
+        - id
+        - applicationId
+        - tenantId
+        - certificateNumber
+        - applicantDisplayName
+        - issueDate
+        - status
+        - verificationUrl
+      properties:
+        id: { type: integer }
+        applicationId: { type: integer }
+        tenantId: { type: integer }
+        tenantName: { type: ["string", "null"] }
+        certificateNumber: { type: string }
+        applicantDisplayName: { type: string }
+        lgaName: { type: ["string", "null"] }
+        wardName: { type: ["string", "null"] }
+        stateOfOrigin: { type: ["string", "null"] }
+        issueDate: { type: string }
+        status: { type: string }
+        verificationUrl: { type: string }
+        issuedByName: { type: ["string", "null"] }
+        revokedReason: { type: ["string", "null"] }
+
+    RevokeInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1 }
+
+    Application:
+      type: object
+      required:
+        - id
+        - tenantId
+        - applicantId
+        - applicantName
+        - status
+      properties:
+        id: { type: integer }
+        tenantId: { type: integer }
+        tenantName: { type: ["string", "null"] }
+        applicantId: { type: integer }
+        applicantName: { type: string }
+        firstName: { type: ["string", "null"] }
+        middleName: { type: ["string", "null"] }
+        lastName: { type: ["string", "null"] }
+        gender: { type: ["string", "null"] }
+        dateOfBirth: { type: ["string", "null"] }
+        nin: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        residentialAddress: { type: ["string", "null"] }
+        stateOfOrigin: { type: ["string", "null"] }
+        lgaId: { type: ["integer", "null"] }
+        lgaName: { type: ["string", "null"] }
+        wardId: { type: ["integer", "null"] }
+        wardName: { type: ["string", "null"] }
+        fatherName: { type: ["string", "null"] }
+        motherName: { type: ["string", "null"] }
+        community: { type: ["string", "null"] }
+        status: { type: string }
+        rejectionReason: { type: ["string", "null"] }
+        submittedAt: { type: ["string", "null"] }
+        reviewedAt: { type: ["string", "null"] }
+        reviewedById: { type: ["integer", "null"] }
+        reviewedByName: { type: ["string", "null"] }
+        createdAt: { type: ["string", "null"] }
+        updatedAt: { type: ["string", "null"] }
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Document"
+        payment:
+          oneOf:
+            - $ref: "#/components/schemas/Payment"
+            - type: "null"
+        certificate:
+          oneOf:
+            - $ref: "#/components/schemas/Certificate"
+            - type: "null"
+
+    ApplicationInput:
+      type: object
+      required: [tenantId, applicantId]
+      properties:
+        tenantId: { type: integer }
+        applicantId: { type: integer }
+        firstName: { type: string }
+        middleName: { type: string }
+        lastName: { type: string }
+        gender: { type: string }
+        dateOfBirth: { type: string }
+        nin: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        residentialAddress: { type: string }
+        stateOfOrigin: { type: string }
+        lgaId: { type: integer }
+        wardId: { type: integer }
+        fatherName: { type: string }
+        motherName: { type: string }
+        community: { type: string }
+
+    ApplicationUpdate:
+      type: object
+      properties:
+        firstName: { type: string }
+        middleName: { type: string }
+        lastName: { type: string }
+        gender: { type: string }
+        dateOfBirth: { type: string }
+        nin: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        residentialAddress: { type: string }
+        stateOfOrigin: { type: string }
+        lgaId: { type: integer }
+        wardId: { type: integer }
+        fatherName: { type: string }
+        motherName: { type: string }
+        community: { type: string }
+        status: { type: string }
+
+    ApprovalInput:
+      type: object
+      required: [officerId]
+      properties:
+        officerId: { type: integer }
+        note: { type: string }
+
+    RejectionInput:
+      type: object
+      required: [officerId, reason]
+      properties:
+        officerId: { type: integer }
+        reason: { type: string, minLength: 1 }
+
+    VerificationResult:
+      type: object
+      required: [found, status, result]
+      properties:
+        found: { type: boolean }
+        status: { type: string }
+        result: { type: string }
+        certificateNumber: { type: ["string", "null"] }
+        applicantDisplayName: { type: ["string", "null"] }
+        tenantName: { type: ["string", "null"] }
+        lgaName: { type: ["string", "null"] }
+        stateOfOrigin: { type: ["string", "null"] }
+        issueDate: { type: ["string", "null"] }
+
+    StatusCount:
+      type: object
+      required: [status, count]
+      properties:
+        status: { type: string }
+        count: { type: integer }
+
+    LgaCount:
+      type: object
+      required: [lgaName, count]
+      properties:
+        lgaName: { type: string }
+        count: { type: integer }
+
+    TrendPoint:
+      type: object
+      required: [month, applications, certificates]
+      properties:
+        month: { type: string }
+        applications: { type: integer }
+        certificates: { type: integer }
+
+    TenantDashboard:
+      type: object
+      required:
+        - tenantId
+        - totalApplications
+        - pendingReview
+        - issuedCertificates
+        - rejectedApplications
+        - totalRevenue
+      properties:
+        tenantId: { type: integer }
+        tenantName: { type: ["string", "null"] }
+        totalApplications: { type: integer }
+        pendingReview: { type: integer }
+        issuedCertificates: { type: integer }
+        rejectedApplications: { type: integer }
+        totalRevenue: { type: number }
+        successfulPayments: { type: integer }
+        statusBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusCount"
+        lgaBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/LgaCount"
+        monthlyTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrendPoint"
+        recentApplications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Application"
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+
+    TenantStat:
+      type: object
+      required: [tenantId, tenantName, status, applications, certificates, revenue]
+      properties:
+        tenantId: { type: integer }
+        tenantName: { type: string }
+        status: { type: string }
+        applications: { type: integer }
+        certificates: { type: integer }
+        revenue: { type: number }
+
+    PlatformOverview:
+      type: object
+      required:
+        - totalTenants
+        - activeTenants
+        - suspendedTenants
+        - totalApplications
+        - totalCertificates
+        - totalRevenue
+      properties:
+        totalTenants: { type: integer }
+        activeTenants: { type: integer }
+        suspendedTenants: { type: integer }
+        totalApplications: { type: integer }
+        totalCertificates: { type: integer }
+        totalRevenue: { type: number }
+        tenants:
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantStat"
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+
+    AuditLog:
+      type: object
+      required: [id, actorName, action, createdAt]
+      properties:
+        id: { type: integer }
+        tenantId: { type: ["integer", "null"] }
+        tenantName: { type: ["string", "null"] }
+        actorName: { type: string }
+        actorRole: { type: ["string", "null"] }
+        action: { type: string }
+        recordType: { type: ["string", "null"] }
+        recordId: { type: ["string", "null"] }
+        outcome: { type: ["string", "null"] }
+        detail: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    Notification:
+      type: object
+      required: [id, userId, type, title, message, read, createdAt]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        applicationId: { type: ["integer", "null"] }
+        type: { type: string }
+        title: { type: string }
+        message: { type: string }
+        read: { type: boolean }
+        createdAt: { type: string }

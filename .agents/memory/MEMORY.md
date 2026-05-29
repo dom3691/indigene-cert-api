@@ -1,0 +1,3 @@
+- [wouter nested layout routing](wouter-nested-routing.md) — wrap a layout/AppShell in a path-less catch-all `<Route>`; a wildcard path (`/:rest*`, `/*`) silently blanks multi-segment child routes.
+- [slash-bearing path params](url-encode-path-params.md) — IDs containing slashes (e.g. certificate `LAG/2026/00001`) must be `encodeURIComponent`'d before going into a `:param` URL segment.
+- [application state-machine guards](state-machine-guards.md) — status transitions are enforced per-endpoint (PATCH/pay/approve/reject); approve accepts `revoked` to allow re-approval, which reactivates the existing cert in place.
