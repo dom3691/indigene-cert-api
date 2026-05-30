@@ -1,0 +1,239 @@
+@if (loading()) {
+  <p class="muted">Loading application...</p>
+} @else if (!app()) {
+  <div class="empty">{{ error() || 'Application not found.' }}</div>
+} @else {
+  @if (app(); as a) {
+    <div class="detail">
+      <div class="row between no-print" style="margin-bottom:1.25rem;">
+        <div class="row">
+          <a routerLink="/apply" class="btn ghost sm">&larr; Back</a>
+          <div>
+            <h1>Application #{{ a.id }}</h1>
+            <p class="muted">{{ a.tenantName }} State</p>
+          </div>
+        </div>
+        <app-status-badge [status]="a.status" />
+      </div>
+
+      <div class="grid layout no-print">
+        <div class="stack">
+          <div class="card">
+            <div class="card-header">
+              <div class="pill-nav">
+                <button [class.active]="tab() === 'details'" (click)="tab.set('details')">
+                  Application Details
+                </button>
+                <button [class.active]="tab() === 'documents'" (click)="tab.set('documents')">
+                  Documents ({{ a.documents?.length || 0 }})
+                </button>
+              </div>
+            </div>
+
+            <div class="card-body">
+              @if (tab() === 'details') {
+                <h3>Personal Information</h3>
+                <div class="grid grid-2" style="margin:0.75rem 0 1.5rem;">
+                  <div class="kv"><span class="k">Full Name</span><span class="v">{{ a.firstName }} {{ a.middleName }} {{ a.lastName }}</span></div>
+                  <div class="kv"><span class="k">NIN</span><span class="v">{{ a.nin }}</span></div>
+                  <div class="kv"><span class="k">Date of Birth</span><span class="v">{{ a.dateOfBirth }}</span></div>
+                  <div class="kv"><span class="k">Gender</span><span class="v">{{ a.gender }}</span></div>
+                  <div class="kv"><span class="k">Email</span><span class="v">{{ a.email }}</span></div>
+                  <div class="kv"><span class="k">Phone</span><span class="v">{{ a.phone }}</span></div>
+                  <div class="kv" style="grid-column:1 / -1;"><span class="k">Residential Address</span><span class="v">{{ a.residentialAddress }}</span></div>
+                </div>
+                <h3>Origin Details</h3>
+                <div class="grid grid-2" style="margin-top:0.75rem;">
+                  <div class="kv"><span class="k">State of Origin</span><span class="v">{{ a.stateOfOrigin }}</span></div>
+                  <div class="kv"><span class="k">LGA</span><span class="v">{{ a.lgaName }}</span></div>
+                  <div class="kv"><span class="k">Ward</span><span class="v">{{ a.wardName }}</span></div>
+                  <div class="kv"><span class="k">Community</span><span class="v">{{ a.community }}</span></div>
+                </div>
+              }
+
+              @if (tab() === 'documents') {
+                <div class="row between" style="margin-bottom:1rem;">
+                  <h3>Supporting Documents</h3>
+                  @if (a.status === 'draft') {
+                    <button class="btn sm" (click)="uploadOpen.set(true)">Upload</button>
+                  }
+                </div>
+                @if (a.documents && a.documents.length > 0) {
+                  <div class="card">
+                    @for (doc of a.documents; track doc.id) {
+                      <div class="doc-row">
+                        <div>
+                          <div class="doc-name">{{ doc.name }}</div>
+                          <div class="muted text-xs">{{ doc.fileName }} &middot; {{ doc.sizeKb }}KB</div>
+                        </div>
+                        <span class="badge draft">{{ doc.type.replace('_', ' ') }}</span>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="empty">
+                    <p>No documents uploaded yet.</p>
+                    <p class="text-xs">Upload identification and proof of origin to proceed.</p>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Next Steps</div></div>
+            <div class="card-body">
+              <div class="timeline">
+                <div class="timeline-item" [class.done]="stepDone('draft')">
+                  <span class="dot">1</span>
+                  <div><div class="step-title">Draft</div><div class="muted text-xs">Fill form &amp; upload docs</div></div>
+                </div>
+                <div class="timeline-item" [class.done]="stepDone('payment')">
+                  <span class="dot">2</span>
+                  <div><div class="step-title">Payment</div><div class="muted text-xs">Pay processing fee</div></div>
+                </div>
+                <div class="timeline-item" [class.done]="stepDone('review')">
+                  <span class="dot">3</span>
+                  <div><div class="step-title">Review</div><div class="muted text-xs">Officer verification</div></div>
+                </div>
+                <div class="timeline-item" [class.done]="stepDone('issued')">
+                  <span class="dot">4</span>
+                  <div><div class="step-title">Certificate</div><div class="muted text-xs">Ready for download</div></div>
+                </div>
+              </div>
+
+              <hr class="divider" />
+
+              @if (a.status === 'draft') {
+                <button class="btn block" [disabled]="!canSubmit() || busy()" (click)="submitApplication()">
+                  Submit Application
+                </button>
+                @if (!canSubmit()) {
+                  <p class="text-xs muted" style="text-align:center; margin-top:0.5rem;">
+                    Upload at least one document to submit.
+                  </p>
+                }
+              }
+
+              @if (a.status === 'awaiting_payment') {
+                <button class="btn block" (click)="payOpen.set(true)">Pay Processing Fee</button>
+              }
+
+              @if (a.status === 'rejected' && a.rejectionReason) {
+                <div class="alert error">
+                  <strong>Application Rejected</strong>
+                  <p class="text-sm" style="margin:0.35rem 0 0;">{{ a.rejectionReason }}</p>
+                </div>
+              }
+
+              @if (isIssued()) {
+                <button class="btn block" (click)="print()">Print Certificate</button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Certificate template -->
+      @if (isIssued() && a.certificate; as cert) {
+        <div class="certificate-wrap">
+          <div class="certificate">
+            <div class="cert-state">{{ a.tenantName }} State Government</div>
+            <div class="cert-sub">Local Government Service Commission</div>
+            <div class="cert-title">Certificate of Indigene</div>
+
+            <p>This is to certify that</p>
+            <div class="cert-name">{{ cert.applicantDisplayName }}</div>
+            <p>is a bonafide indigene of</p>
+            <div class="cert-origin">
+              <div class="val">{{ cert.wardName }}</div>
+              <div class="val">{{ cert.lgaName }}</div>
+              <div class="lbl">Ward</div>
+              <div class="lbl">Local Government Area</div>
+            </div>
+            <p>in {{ a.tenantName }} State of Nigeria.</p>
+
+            <div class="cert-footer">
+              <div class="cert-sign">
+                {{ cert.issuedByName || 'Authorizing Officer' }}
+                <small>Issuing Officer</small>
+              </div>
+              <div class="cert-qr">
+                <qrcode [qrdata]="cert.verificationUrl" [width]="120" [errorCorrectionLevel]="'H'"></qrcode>
+                <span class="cert-number">{{ cert.certificateNumber }}</span>
+                <span class="text-xs muted">Scan to verify authenticity</span>
+              </div>
+              <div class="cert-sign">
+                {{ cert.issueDate | date: 'mediumDate' }}
+                <small>Date of Issue</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+}
+
+<!-- Upload modal -->
+@if (uploadOpen()) {
+  <div class="modal-backdrop no-print" (click)="uploadOpen.set(false)">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="card-header"><div class="card-title">Upload Document</div></div>
+      <div class="card-body">
+        <div class="field">
+          <label>Document Name</label>
+          <input [(ngModel)]="docName" placeholder="e.g. Birth Certificate" />
+        </div>
+        <div class="field">
+          <label>Document Type</label>
+          <select [(ngModel)]="docType">
+            @for (t of docTypes; track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label>File Name</label>
+          <input [(ngModel)]="docFileName" placeholder="e.g. birth-certificate.pdf" />
+        </div>
+        <div class="field">
+          <label>Size (KB)</label>
+          <input type="number" [(ngModel)]="docSizeKb" />
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn secondary" (click)="uploadOpen.set(false)">Cancel</button>
+        <button class="btn" (click)="uploadDocument()" [disabled]="!docName || !docFileName || busy()">
+          {{ busy() ? 'Uploading...' : 'Upload' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Payment modal -->
+@if (payOpen()) {
+  <div class="modal-backdrop no-print" (click)="payOpen.set(false)">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="card-header"><div class="card-title">Complete Payment</div></div>
+      <div class="card-body" style="text-align:center;">
+        <p class="muted">{{ app()?.tenantName }} State Processing Fee</p>
+        <div class="alert info" style="margin-top:1rem; text-align:left;">
+          <strong>Demo Payment Gateway</strong>
+          <p class="text-sm" style="margin:0.35rem 0 0;">
+            Clicking below will simulate a successful payment.
+          </p>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn secondary" (click)="payOpen.set(false)">Cancel</button>
+        <button class="btn" (click)="pay()" [disabled]="busy()">
+          {{ busy() ? 'Processing...' : 'Simulate Successful Payment' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

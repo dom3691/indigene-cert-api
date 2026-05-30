@@ -1,0 +1,40 @@
+<div class="shell">
+  <aside class="sidebar">
+    <a routerLink="/" class="brand">
+      <span class="brand-mark">IC</span>
+      <span class="brand-text">Indigene Portal</span>
+    </a>
+    <nav class="nav">
+      @for (item of navItems(); track item.href) {
+        <a
+          [routerLink]="item.href"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav-link"
+          >{{ item.label }}</a
+        >
+      }
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="app-name">Indigene Certificate Portal</div>
+      <div class="account">
+        @if (user(); as u) {
+          <div class="account-info">
+            <span class="account-name">{{ u.name }}</span>
+            <span class="account-role">{{ roleLabel(u.role) }}</span>
+          </div>
+          <button type="button" class="btn secondary sm" (click)="signOut()">
+            Sign out
+          </button>
+        }
+      </div>
+    </header>
+
+    <main class="content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,33 @@
+.detail {
+  max-width: 980px;
+  margin: 0 auto;
+}
+.layout {
+  grid-template-columns: 2fr 1fr;
+}
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+.doc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.doc-row:last-child {
+  border-bottom: none;
+}
+.doc-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.step-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.certificate-wrap {
+  margin-top: 2rem;
+}

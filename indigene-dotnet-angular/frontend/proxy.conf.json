@@ -1,0 +1,10 @@
+{
+  "//": "Dev proxy: forwards /api requests to the ASP.NET Core backend.",
+  "//backend": "The backend listens on http://localhost:5000 (HTTP). If your backend runs on a different port (commonly 5001 for HTTPS), change the target below and set secure=false for self-signed certs.",
+  "/api": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

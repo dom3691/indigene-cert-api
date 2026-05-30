@@ -10,3 +10,5 @@ Identifiers that contain `/` (e.g. certificate numbers like `LAG/2026/00001`) br
 **Why:** Orval/codegen-generated clients interpolate params raw (`/api/verify/${certificateNumber}`) with no encoding. Express's `:param` only captures one segment.
 
 **How to apply:** `encodeURIComponent(value)` before passing such a value to a generated hook/path builder (so `/` → `%2F`). The server-side Express param decodes it back. Verified end-to-end through the shared proxy. Alternatively, design the contract to take the identifier as a query parameter instead of a path segment.
+
+**Stack caveat (ASP.NET Core):** the opposite rule applies. ASP.NET Core/Kestrel rejects percent-encoded slashes (`%2F`) in a path segment by default, so for a catch-all route (`/api/verify/{*certificateNumber}`) the client must send the slashes **literally** (encode only the chars within each segment, then re-join with `/`). Express decodes `%2F` fine; Kestrel does not.
